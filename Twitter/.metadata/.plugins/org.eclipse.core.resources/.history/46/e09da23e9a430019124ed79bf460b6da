@@ -1,0 +1,151 @@
+package com.flx.test;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Cluster.Builder;
+import com.datastax.driver.core.Host;
+import com.datastax.driver.core.Metadata;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Session;
+import com.datastax.driver.core.SocketOptions;
+
+import fromtwitter.Serialisation;
+
+/** 
+ * @author zxb 2014年12月29日 下午3:46:23
+ */
+public class CassandraTest {
+
+    public static void main(String[] args) {
+    	   		
+    		Cluster cluster = null;
+    		Session session = null;
+    		
+    		try {
+    			//定义cluster类
+    			cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
+    			//需要获取session对象
+    			session = cluster.connect();
+    			//创建键空间    防止发生错误 if not exists
+//    			String createKeySpaceCQL =
+//    					"create keyspace if not exists testkeyspace1 with "
+//    					+ "replication={'class':'SimpleStrategy','replication_factor':1}";
+//    			session.execute(createKeySpaceCQL);
+//    			//创建列族 stat
+//    			String createTableStat ="create table if not exists testkeyspace1.stat(screenname varchar primary key,"
+//    					+ "name varchar,description varchar,location varchar,"
+//    					+ "createdDate timestamp,favorites int,followers int,friends int,tweets int)";
+//    					//"create table if not exists testkeyspace1.student(name varchar primary key, age int)";
+////    					
+//    			session.execute(createTableStat);
+//    			//插入数据
+//    			String stat = "insert into testkeyspace1.stat";
+//    			stat += Serialisation.stat();
+////    			String insertCQL = "insert into testkeyspace1.student(name,age) values('zhang',null)";
+//    			session.execute(stat);
+    			//查询
+    			String queryStat =
+    					"select * from testkeyspace1.stat";
+//    			"select * from testkeyspace1.student";
+    			ResultSet rs = session.execute(queryStat);
+    			List<Row> dataList = rs.all();
+    			for (Row row : dataList) {
+    				System.out.println("------name: " + row.getString("screenname"));
+    				System.out.println("------tweets: " + row.getInt("tweets"));
+    				System.out.println("------date: " + row.getDate("createdDate"));
+    			}
+    						
+    			
+    			//创建列族 followers
+//    			String createTableFollower ="create table if not exists testkeyspace1.follower(id varchar primary key,screenname varchar,"
+//    					+ "name varchar,creatDate timestamp,nbTweets int,nbFolowers int,location varchar)";
+    					//"create table if not exists testkeyspace1.student(name varchar primary key, age int)";//    					
+//    			session.execute(createTableFollower);
+//    			//插入数据
+//    			ArrayList<String> listF = Serialisation.followers();
+//    			for (String insert: listF) {
+//	    			String follower = "insert into testkeyspace1.follower";
+//	    			follower += insert;
+//	    			System.out.println(follower);
+//	    			session.execute(follower);
+//    			}
+    			//查询数据插入情况
+//	    			String queryFollower =
+//	    					"select * from testkeyspace1.follower";
+//	    			ResultSet rsf = session.execute(queryFollower);
+//	    			List<Row> dataListF = rs.all();
+//	    			for (Row row : dataListF) {
+//	    				System.out.println("------id: " + row.getString("id"));
+//	    				System.out.println("------tweets: " + row.getInt("nbTweets"));
+//	    				System.out.println("------date: " + row.getDate("createdDate"));
+//	    			}
+    			
+    			//创建列族 tweet
+    			//String drop="drop table if exists testkeyspace1.tweet";
+    			//session.execute(drop);
+    			String createTableTweet ="create table if not exists testkeyspace1.tweet(idTweet varchar primary key,"
+    					+ "creatDate timestamp, nbFavoris int, nbRetweet int, contenu varchar, retweet varchar,"
+    					+ "imgUrl varchar, ,videoUrl varchar, gifUrl varchar,retweetUrl varchar)";
+    			session.execute(createTableTweet);
+    			
+    			String test = "insert into testkeyspace1.tweet (idTweet) values ('whats')";
+    			session.execute(test);
+    			String queryTest =
+    					"select * from testkeyspace1.tweet";
+//    			"select * from testkeyspace1.student";
+    			ResultSet rss = session.execute(queryTest);
+    			List<Row> data = rss.all();
+    			for (Row row : data) {
+    				System.out.println("------name: " + row.getString("idTweet"));
+    				}
+    			
+    			ArrayList<String> listT = Serialisation.tweets();
+    			for (String insert: listT) {
+	    			//插入数据
+	    			String tweet = "insert into testkeyspace1.tweet";
+	    			tweet += insert;
+	    			System.out.println(tweet);
+	    			session.execute(tweet);
+    			}
+    			//查询
+	    			String queryTweet =
+	    					"select * from testkeyspace1.tweet";
+	    			ResultSet rsf = session.execute(queryTweet);
+	    			List<Row> dataListT = rs.all();
+	    			for (Row row : dataListT) {
+	    				System.out.println("------id: " + row.getString("idTweet"));
+	    				System.out.println("------tweets: " + row.getInt("nbFavoris"));
+	    				System.out.println("------date: " + row.getDate("creatDate"));
+	    			}
+    			
+    			//修改
+//    			String updateCQL =
+//    					"update testkeyspace1.student set age=40 where name='zhang'";
+//    			session.execute(updateCQL);
+//    			rs = session.execute(queryCQL);
+//    			dataList = rs.all();
+//    			for (Row row : dataList) {
+//    				System.out.println("------name" + row.getString("name"));
+//    				System.out.println("------age" + row.getInt("age"));
+//    			}
+    			
+    			
+    			//删除数据
+//    			String deleteCQL=
+//    					"delete from testkeyspace1.student where name='zhang'";
+//    			session.execute(deleteCQL);
+//    			rs = session.execute(queryCQL);
+//    			dataList = rs.all();
+//    			for (Row row : dataList) {
+//    				System.out.println("------name" + row.getString("name"));
+//    				System.out.println("------age" + row.getInt("age"));
+//    			}
+    		} catch (Exception e) {
+    			e.printStackTrace();
+    		}
+    	}
+
+}

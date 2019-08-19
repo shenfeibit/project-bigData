@@ -1,0 +1,161 @@
+package com.flx.test;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Cluster.Builder;
+import com.datastax.driver.core.Host;
+import com.datastax.driver.core.Metadata;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Session;
+import com.datastax.driver.core.SocketOptions;
+
+import fromtwitter.Serialisation;
+
+/** 
+ * @author zxb 2014年12月29日 下午3:46:23
+ */
+public class CassandraTest {
+
+    public static void main(String[] args) {
+    	   		
+    		Cluster cluster = null;
+    		Session session = null;
+    		
+    		try {
+    			//定义cluster类
+    			cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
+    			//需要获取session对象
+    			session = cluster.connect();
+    			//创建键空间    防止发生错误 if not exists
+    			String createKeySpaceCQL =
+    					"create keyspace if not exists keyspaceUEFA with "
+    					+ "replication={'class':'SimpleStrategy','replication_factor':1}";
+    			session.execute(createKeySpaceCQL);
+    			//创建列族 stat
+    			String createTableStat ="create table if not exists keyspaceUEFA.stat(screenname varchar primary key,"
+    					+ "name varchar,description varchar,location varchar,"
+    					+ "createdDate timestamp,favorites int,followers int,friends int,tweets int,geolocation varchar)";
+    					//"create table if not exists keyspaceUEFA.student(name varchar primary key, age int)";
+   					
+    			session.execute(createTableStat);
+    			//插入数据
+    			String stat = "insert into keyspaceUEFA.stat";
+    			stat += Serialisation.stat();
+//    			String insertCQL = "insert into keyspaceUEFA.student(name,age) values('zhang',null)";
+    			session.execute(stat);
+    			//查询
+    			String queryStat =
+    					"select * from keyspaceUEFA.stat";
+//    			"select * from keyspaceUEFA.student";
+    			ResultSet rs = session.execute(queryStat);
+    			List<Row> dataList = rs.all();
+    			for (Row row : dataList) {
+    				System.out.println("------name: " + row.getString("screenname"));
+    				System.out.println("------geo: " + row.getString("geolocation"));
+    				System.out.println("------date: " + row.getTimestamp("createdDate"));
+    			}
+    						
+    			
+    			//创建列族 followers
+    			String createTableFollower ="create table if not exists keyspaceUEFA.follower(id varchar primary key,screenname varchar,"
+    					+ "name varchar,creatDate timestamp,nbTweets int,nbFolowers int,location varchar,geo varchar)";
+    					//"create table if not exists keyspaceUEFA.student(name varchar primary key, age int)";//    					
+    			session.execute(createTableFollower);
+    			//插入数据
+    			System.out.println("start insert follower");
+    			ArrayList<String> listF = Serialisation.followers();
+    			System.out.println("finish recuperer follower");
+    			for (int i=0;i<10;i++) {
+	    			String follower = "insert into keyspaceUEFA.follower";
+	    			follower += listF.get(i);
+	    			System.out.println(follower);
+	    			session.execute(follower);
+    			}
+//    			查询数据插入情况
+    			System.out.println("start query follower");
+	    			String queryFollower =
+	    					"select * from keyspaceUEFA.follower";
+	    			ResultSet rsf = session.execute(queryFollower);
+	    			System.out.println("start query follower");
+	    			List<Row> dataListF = rsf.all();
+	    			System.out.println("start query follower");
+	    			for (Row row : dataListF) {
+	    				System.out.println("start query follower");
+	    				System.out.println("------id: " + row.getString("id"));
+	    				System.out.println("------geo: " + row.getInt("geo"));
+	    				System.out.println("------date: " + row.getTimestamp("creatDate"));
+	    			}
+    			
+    			//创建列族 tweet
+    			String drop="drop table if exists keyspaceUEFA.tweet";
+    			session.execute(drop);
+    			String createTableTweet ="create table if not exists keyspaceUEFA.tweet(idTweet varchar primary key,"
+    					+ "creatDate timestamp, nbFavoris int, nbRetweet int, contenu varchar, retweet varchar,"
+    					+ "imgUrl varchar, ,videoUrl varchar, gifUrl varchar,retweetUrl varchar)";
+    			session.execute(createTableTweet);
+    			String w = "what's";
+    			System.out.println(Serialisation.convertir(w));
+    			String test = "insert into keyspaceUEFA.tweet (idTweet) values ('"+Serialisation.convertir(w)+"')";
+    			session.execute(test);
+    			String queryTest =
+    					"select * from keyspaceUEFA.tweet";
+//    			"select * from keyspaceUEFA.student";
+    			ResultSet rss = session.execute(queryTest);
+    			List<Row> data = rss.all();
+    			for (Row row : data) {
+    				System.out.println("------name: " + row.getString("idTweet"));
+    				}
+    			
+    			for (twitter4j.Status s : Serialisation.tweets().keySet()) {
+	    			//插入数据
+	    			String tweet = "insert into keyspaceUEFA.tweet";
+	    			tweet += Serialisation.tweets().get(s);
+	    			session.execute(tweet);
+	    			String update1 = "update tweet set usermetion = ";
+	    			String update2 = " where idTweet= '"+s.getId()+"'";
+	    			session.execute(update1+Serialisation.userMention(s)+update2);
+    			}
+    			//查询
+    			System.out.println("start query");
+	    			String queryTweet =
+	    					"select * from keyspaceUEFA.tweet";
+	    			ResultSet rst = session.execute(queryTweet);
+	    			List<Row> dataListT = rst.all();
+	    			
+	    			for (Row row : dataListT) {
+	    				System.out.println("------id: " + row.getString("idTweet"));
+	    				System.out.println("------tweets: " + row.getInt("nbFavoris"));
+	    				System.out.println("------date: " + row.getTimestamp("creatDate"));
+	    			}
+    			
+    			//修改
+//    			String updateCQL =
+//    					"update keyspaceUEFA.student set age=40 where name='zhang'";
+//    			session.execute(updateCQL);
+//    			rs = session.execute(queryCQL);
+//    			dataList = rs.all();
+//    			for (Row row : dataList) {
+//    				System.out.println("------name" + row.getString("name"));
+//    				System.out.println("------age" + row.getInt("age"));
+//    			}
+    			
+    			
+    			//删除数据
+//    			String deleteCQL=
+//    					"delete from keyspaceUEFA.student where name='zhang'";
+//    			session.execute(deleteCQL);
+//    			rs = session.execute(queryCQL);
+//    			dataList = rs.all();
+//    			for (Row row : dataList) {
+//    				System.out.println("------name" + row.getString("name"));
+//    				System.out.println("------age" + row.getInt("age"));
+//    			}
+    		} catch (Exception e) {
+    			e.printStackTrace();
+    		}
+    	}
+
+}

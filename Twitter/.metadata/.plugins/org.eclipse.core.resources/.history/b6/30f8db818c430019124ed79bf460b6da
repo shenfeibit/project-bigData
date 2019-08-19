@@ -1,0 +1,196 @@
+package fromtwitter;
+
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+import fromtwitter.GetConfiguration;
+import twitter4j.IDs;
+import twitter4j.Paging;
+import twitter4j.Status;
+import twitter4j.Twitter;
+import twitter4j.TwitterException;
+import twitter4j.User;
+
+/*
+ * getUserTimeline(user)
+ * get users tweets
+ */
+public class Serialisation{
+	
+	static void sleep(long ms) {
+	    try { Thread.sleep(ms); }
+	    catch(InterruptedException ex) { Thread.currentThread().interrupt(); }
+	    }
+
+		static GetConfiguration conf = new GetConfiguration();
+		static Twitter twitter = conf.getNewInstance();
+		static String user = "FIFAWorldCup";
+		static Paging page = new Paging();
+		static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+		
+		public static String stat() throws TwitterException {
+			String stat = "";
+			User target = twitter.showUser(user);
+			stat += "(screenname,name,description,location,createdDate,favorites,followers,friends,tweets)"
+					+ " values('" + target.getName() + "','" 
+					+ target.getScreenName() + "','"
+					+ target.getDescription() + "','"
+					+ target.getLocation() + "','"
+					+ sdf.format(target.getCreatedAt()) +"',"
+					+ target.getFavouritesCount() + ","
+					+ target.getFollowersCount() + ","
+					+ target.getFriendsCount() + ","
+					+ target.getStatusesCount()
+					+ ")";
+			return stat;
+		}
+		
+		public static ArrayList<String> followers() throws TwitterException{
+			ArrayList<String> followers = new ArrayList<String>();
+			IDs ids = twitter.getFollowersIDs("FIFAWorldCup",-1);
+			for(long id : ids.getIDs()) {
+				String cql1 = "";
+				User user = twitter.showUser(id);
+				cql1 += "(id,screenname,name,creatDate,nbTweets,nbFolowers,location)";
+				String cql = cql1 + " values('"
+							+ id + "','"
+							+ user.getScreenName() + "','"
+							+ user.getName() + "','"
+							+ sdf.format(user.getCreatedAt()) + "',"
+							+ user.getStatusesCount() + ","
+							+ user.getFollowersCount() + ",'" 
+							+ user.getLocation()+"'"
+							+")";
+				followers.add(cql);
+				sleep(1000);
+			}
+			return followers;
+		}
+		
+		public static ArrayList<String> tweets() throws TwitterException{
+			ArrayList<String> tweets = new ArrayList<String>();
+			List<Status> statuses;
+			page.count(200);
+			statuses = twitter.getUserTimeline(user, page);
+			for(Status s : statuses) {
+				String cql1 = "";
+				String cql2 = "";
+				String cql3 = "";
+				String cql4 = "";
+				cql1 += "(idTweet,creatDate,nbFavoris,nbRetweet,contenu,retweet";
+				cql2 += " values('"
+						+ s.getId() + "','"
+						+ sdf.format(s.getCreatedAt()) + "',"
+						+ s.getFavoriteCount() + ","
+						+ s.getRetweetCount() + ",'"
+						+ s.getText() + "'";
+				if (s.getMediaEntities() !=null && s.getMediaEntities().length>=1) {
+					try {
+						String type =s.getMediaEntities()[0].getType();
+						if (type.equals("photo")) {
+							cql3 = ",'" + s.getMediaEntities()[0].getMediaURL() + "'";
+							cql1 += ",imgUrl";
+						} else if (type.equals("video")) {
+							cql3 = ",'" + s.getMediaEntities()[0].getMediaURL() + "'";
+							cql1 += ",videoUrl";
+						} else {
+							cql3 = ",'" + s.getMediaEntities()[0].getMediaURL() + "'";
+							cql1 += ",gifUrl";
+						}
+
+					} catch(Exception e) {
+						System.out.println("Status:"+ s);
+						System.out.println(e.getStackTrace());
+					}
+				}
+				if (s.getRetweetedStatus() !=null) {
+					// 如果这条消息是转发的
+					String reScreenName = s.getRetweetedStatus().getUser().getScreenName();
+					Long RetweetedId =s.getRetweetedStatus().getId();
+					String retweetUrl = "https://twitter.com/"+ reScreenName
+							+ "/status/" + RetweetedId;
+					cql1 += ",retweetUrl";
+					cql4 += ",retweetUrl";
+					System.out.println("retweetUrl:"+retweetUrl);
+				}
+				String cql = cql1 + ")" + cql2 + cql3 + cql4 + ")";
+				tweets.add(cql);
+				sleep(1000);
+			}
+			return tweets;
+		}
+
+		/*
+		public static ArrayList<String> Favoris(){
+			return null;
+		}
+		
+		public static ArrayList<String> Retweets(){
+			return null;
+		}
+		
+		public static ArrayList<String> Reponses(){
+			return null;
+		}
+		
+		
+		page.count(10);
+		statuses = twitter.getUserTimeline(user, page);
+		User target = twitter.showUser(user);
+		List<User> followers = twitter.getFollowersList(user, -1,target.getFollowersCount());
+		System.out.println(target.getFollowersCount());
+		for(User follower : followers) {
+			System.out.println(follower.getName() + "-" + follower.getLocation());
+		}
+		System.out.println("Showing@"+ user + "'s user timeline.");
+		for (Status status : statuses) {
+			//status.getRetweetCount() 转推的数�?
+			// status.getFavoriteCount() 点赞次数
+			// status.getSource() 发布的客户端类型
+			// status.getCreatedAt() 发布时间
+			// status.getGeoLocation() 地点
+			// status.getId() 获取该条tweet Id
+			String content = status.getText(); //tweet内容
+			String ScreenName = status.getUser().getScreenName();
+			Date publishDate = status.getCreatedAt();
+			System.out.println("@"+ ScreenName +"--"+ content + "--"+publishDate);
+			//System.out.println(status.getUser().getName() + ":" +
+			// status.getText());
+			String tweetUrl = "https://twitter.com/"+ status.getUser().getScreenName() + "/status/"+ status.getId();
+			System.out.println("tweetUrl:"+ tweetUrl);
+			if (status.getMediaEntities() !=null && status.getMediaEntities().length>=1) {
+				try {
+					String type =status.getMediaEntities()[0].getType();
+					if (type.equals("photo")) {
+						String imgUrl =status.getMediaEntities()[0].getMediaURL();
+						System.out.println("imgUrl:"+ imgUrl);
+					} else if (type.equals("video")) {
+						String videoUrl =status.getMediaEntities()[0].getMediaURL();
+						System.out.println("videoUrl:"+ videoUrl);
+					} else {
+						String animatedGifUrl =status.getMediaEntities()[0].getMediaURL();
+						System.out.println("animatedGifUrl:"+ animatedGifUrl);
+					}
+
+				} catch(Exception e) {
+					System.out.println("Status:"+ status);
+					System.out.println(e.getStackTrace());
+				}
+			}
+			if (status.getRetweetedStatus() !=null) {
+				// 如果这条消息是转发的
+				//System.out.println("sourceTweet:"+status.getRetweetedStatus());
+				//System.out.println(tweetUrl);
+				String reScreenName = status.getRetweetedStatus().getUser().getScreenName();
+				Long RetweetedId =status.getRetweetedStatus().getId();
+				//System.out.println("getMediaEntities:"+status.getRetweetedStatus().getUser().getScreenName());
+				//System.out.println("getMediaEntities:"+status.getRetweetedStatus().getId());
+				String retweetUrl = "https://twitter.com/"+ reScreenName
+						+ "/status/" + RetweetedId;
+				System.out.println("retweetUrl:"+retweetUrl);
+			}
+		}
+		*/
+}
+

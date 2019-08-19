@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+<fullyQualifiedTypeName name="com.datastax.driver.core.Session"/>
+<fullyQualifiedTypeName name="com.datastax.driver.core.ResultSet"/>
+<fullyQualifiedTypeName name="com.datastax.driver.core.Row"/>
+<fullyQualifiedTypeName name="java.util.List"/>
+<fullyQualifiedTypeName name="twitter4j.User"/>
+<fullyQualifiedTypeName name="java.util.ArrayList"/>
+<fullyQualifiedTypeName name="java.text.SimpleDateFormat"/>
+<fullyQualifiedTypeName name="fromtwitter.Serialisation"/>
+<fullyQualifiedTypeName name="java.lang.System"/>
+<fullyQualifiedTypeName name="twitter4j.UserMentionEntity"/>
+</qualifiedTypeNameHistroy>
